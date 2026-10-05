@@ -1,0 +1,6 @@
+{
+  "name": "agent-dash",
+  "version": "0.2.0",
+  "description": "Sessions, subagents and agent teams in one terminal pane (/dash)",
+  "author": { "name": "agent-dash contributors" }
+}
