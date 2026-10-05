@@ -1,7 +1,10 @@
 // Pure text helpers. No mods API calls in this file.
 
+const ANSI_ESCAPES = /\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)|[ -/]*[0-~])/g
+const CONTROL_CHARS = /[\x00-\x1f\x7f-\x9f]/g
+
 export function fit(text, width) {
-  const t = String(text || '')
+  const t = String(text || '').replace(ANSI_ESCAPES, '').replace(CONTROL_CHARS, ' ')
   if (width <= 0) return ''
   return t.length <= width ? t : t.slice(0, Math.max(0, width - 1)) + '…'
 }

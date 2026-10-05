@@ -340,7 +340,7 @@ async function submitInput($, value, target) {
   }
   try {
     const r = await $.process.run(['claude', '--bg', text])
-    return r.exitCode === 0 ? 'started: ' + fit(r.stdout.trim(), 40) : 'start failed: ' + fit(r.stderr.trim(), 40)
+    return r.exitCode === 0 ? 'started: ' + fit(r.stdout.trim().split('\n')[0], 40) : 'start failed: ' + fit(r.stderr.trim(), 40)
   } catch (err) {
     return 'start failed: ' + err.message
   }
