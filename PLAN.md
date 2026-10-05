@@ -41,7 +41,7 @@ The pane is pinned once `/dash` runs: Esc only returns focus to the prompt, and 
 
 ## Files
 
-- `hooks/register.js`: entry module. Every hook and every mods API call (the validator rejects passing `$` into imported functions).
+- `hooks/register.ts`: entry module. Every hook and every mods API call (the validator rejects passing `$` into imported functions).
 - `hooks/lib/views.js`: list and detail screens, header and stacked limits.
 - `hooks/lib/title.js`: rasa ASCII title and the `=` separator.
 - `hooks/lib/rows.js`: joins `claude agents --json` with snapshots; mini-info line.
@@ -59,7 +59,7 @@ The pane is pinned once `/dash` runs: Esc only returns focus to the prompt, and 
 ## Phases
 
 ### Phase 1 — Sonnet — validate and smoke test
-1. Run `claude plugin validate ./agent-dash`; fix any static-analysis error in `hooks/register.js`.
+1. Run `claude plugin validate ./agent-dash`; fix any static-analysis error in `hooks/register.ts`.
 2. Load with `--plugin-dir`, run `/dash`. Accept: this session appears under Working or Done.
 3. Ask Claude to spawn an Explore subagent on something trivial. Accept: it appears under the session within ~2s, flips to `∙` with a result when it stops.
 4. Dispatch a tiny task from the pane input. Accept: a new row appears; `x` stops it.
