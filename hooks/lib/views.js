@@ -160,7 +160,7 @@ function inputRow(el, model, actions) {
   const messaging = model.mode === 'message' && model.target
   return Input({
     key: 'cmd',
-    label: messaging ? 'msg ' + model.target.name : 'new',
+    label: messaging ? fit('msg ' + model.target.name, 24) : 'new',
     placeholder: messaging ? 'message, Enter to send' : 'task for a new background session',
     value: '',
     submitLabel: messaging ? 'send' : 'start',
