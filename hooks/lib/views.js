@@ -4,7 +4,7 @@ import { titleRows } from './title.js'
 import { miniInfo } from './rows.js'
 
 // Drawing code. No mods API calls in this file: `el` holds the element functions
-// from $.ui.resolve(e), and `actions` holds callbacks built in register.js.
+// from $.ui.resolve(e), and `actions` holds callbacks built in register.ts.
 
 export function screen(el, model, actions) {
   const { Box, Text } = el
