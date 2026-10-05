@@ -45,7 +45,7 @@ let limits = [] // plan rate limits: [{ kind, percentUsed, resetsAt }]
 let agentsError = ''
 let view = 'list' // 'list' | 'detail'
 let selected = null // row key
-let mode = 'dispatch' // 'dispatch' | 'message'
+let messageTo: { sessionId: string; name: string } | null = null
 let note = ''
 
 export  const register:Register = (on) => {
@@ -155,17 +155,17 @@ export  const register:Register = (on) => {
       open: (r) => {
         selected = r.key
         view = 'detail'
-        mode = 'dispatch'
+        messageTo = null
         $.ui.invalidate('ui.render')
       },
       back: () => {
         view = 'list'
         selected = null
-        mode = 'dispatch'
+        messageTo = null
         $.ui.invalidate('ui.render')
       },
-      toggleMessage: () => {
-        mode = mode === 'message' ? 'dispatch' : 'message'
+      toggleMessage: (r) => {
+        messageTo = messageTo || !r.sessionId ? null : { sessionId: r.sessionId, name: r.name }
         $.ui.invalidate('ui.render')
       },
       stop: async (r) => {
@@ -177,11 +177,11 @@ export  const register:Register = (on) => {
         $.ui.invalidate('ui.render')
       },
       submit: async (value) => {
-        note = await submitInput($, value, target)
+        note = await submitInput($, value)
         await refresh($)
       },
     }
-    return screen(el, { w, rows, view, target, limits, agentsError, mode, note }, actions)
+    return screen(el, { w, rows, view, target, limits, agentsError, messageTo, note }, actions)
   })
 }
 
@@ -330,13 +330,14 @@ async function copyAttach($, r) {
   return 'copied: ' + cmd
 }
 
-async function submitInput($, value, target) {
+async function submitInput($, value) {
   const text = String(value || '').trim()
   if (!text) return note
-  if (mode === 'message' && target && target.sessionId) {
-    mode = 'dispatch'
-    const sent = await $.session.send({ to: { sessionId: target.sessionId }, text })
-    return sent.isDelivered ? 'sent to ' + target.name : 'not delivered: ' + sent.reason
+  if (messageTo) {
+    const to = messageTo
+    messageTo = null
+    const sent = await $.session.send({ to: { sessionId: to.sessionId }, text })
+    return sent.isDelivered ? 'sent to ' + to.name : 'not delivered: ' + sent.reason
   }
   try {
     const r = await $.process.run(['claude', '--bg', text])
