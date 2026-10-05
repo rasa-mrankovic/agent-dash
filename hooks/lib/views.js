@@ -137,7 +137,7 @@ function detailRows(el, r, w, actions) {
       columnGap: 2,
       children: [
         Button({ key: 'back-' + r.key, plain: true, hotkey: 'b', label: 'back', onPress: () => actions.back() }),
-        Button({ key: 'msg-' + r.key, plain: true, hotkey: 'm', label: 'message', onPress: () => actions.toggleMessage() }),
+        Button({ key: 'msg-' + r.key, plain: true, hotkey: 'm', label: 'message', onPress: () => actions.toggleMessage(r) }),
         Button({ key: 'stop-' + r.key, plain: true, hotkey: 'x', label: 'stop', onPress: () => actions.stop(r) }),
         Button({ key: 'attach-' + r.key, plain: true, hotkey: 'a', label: 'copy attach', onPress: () => actions.copyAttach(r) }),
       ],
@@ -157,13 +157,13 @@ function newSessionRows(el, w, model, actions) {
 
 function inputRow(el, model, actions) {
   const { Input } = el
-  const messaging = model.mode === 'message' && model.target
+  const to = model.messageTo
   return Input({
     key: 'cmd',
-    label: messaging ? fit('msg ' + model.target.name, 24) : 'new',
-    placeholder: messaging ? 'message, Enter to send' : 'task for a new background session',
+    label: to ? fit('msg ' + to.name, 24) : 'new',
+    placeholder: to ? 'message, Enter to send' : 'task for a new background session',
     value: '',
-    submitLabel: messaging ? 'send' : 'start',
+    submitLabel: to ? 'send' : 'start',
     onSubmit: (value) => actions.submit(value),
   })
 }
