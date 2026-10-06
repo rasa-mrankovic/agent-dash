@@ -5,10 +5,11 @@
 // Every mods API call lives in this file. ./lib holds pure helpers and the drawing code,
 // because `claude plugin validate` rejects passing `$` into imported functions.
 // Requires Claude Code v2.1.287+. Develop with: claude --plugin-dir ./agent-dash  →  /dash
-import type { Register } from 'claude-code';
+import type { EngineInterface, Register, SessionRateLimit } from 'claude-code';
 import { mergeRows, toolDetail, addTokens, trimAgents, EDIT_TOOLS } from './lib/rows.js'
 import { screen } from './lib/views.js'
 import { fit } from './lib/format.js'
+import type { Actions, AgentEntry, CloseKind, FilesDiff, LastTurn, ListedSession, MessageTarget, Row, Snapshot, TaskEntry, Tokens, ToolUse, View } from './lib/types';
 
 const PANE = 'dash'
 const PANE_COLUMNS = 64
@@ -19,17 +20,17 @@ const DIFF_MS = 10000
 const MAX_TOOLS = 6
 
 // ---------- reporter state (this session) ----------
-let sessionId = null
+let sessionId: String = new String();
 let sessionCwd = ''
 let sessionModel = ''
 let worktree = ''
-const agents = {} // agent_id -> { type, state, startedAt, endedAt, result }
-const tasks = {} // task_id -> { subject, owner, done }
-const idleTeammates = {} // teammate_name -> timestamp
-let lastTools = [] // newest first
-let lastTurn = null
-let tokens = { input: 0, output: 0 }
-let diff = null // { files, plus, minus }
+const agents: Record<string, AgentEntry> = {} // agent_id -> { type, state, startedAt, endedAt, result }
+const tasks: Record<string, TaskEntry> = {} // task_id -> { subject, owner, done }
+const idleTeammates: Record<string, number> = {} // teammate_name -> timestamp
+let lastTools: ToolUse[] = [] // newest first
+let lastTurn: LastTurn | null = null
+let tokens: Tokens = { input: 0, output: 0 }
+let diff: FilesDiff | null = null;
 let diffDirty = true
 let lastDiffAt = 0
 let dirty = false
@@ -38,14 +39,14 @@ let dirty = false
 let pinned = false // set by /dash, cleared only by a deliberate close
 let paneOpen = false
 let paneWaiting = false // opened by the mod but waiting for a wider terminal
-let lastCloseKind = ''
-let sessions = [] // rows from `claude agents --json --all`
-let snapshots = {} // sessionId -> snapshot from $.store
-let limits = [] // plan rate limits: [{ kind, percentUsed, resetsAt }]
+let lastCloseKind: CloseKind | '' = ''
+let sessions: ListedSession[] = [] // rows from `claude agents --json --all`
+let snapshots: Record<string, Snapshot> = {} // sessionId -> snapshot from $.store
+let limits: SessionRateLimit[] = [] // plan rate limits: [{ kind, percentUsed, resetsAt }]
 let agentsError = ''
-let view = 'list' // 'list' | 'detail'
-let selected = null // row key
-let messageTo: { sessionId: string; name: string } | null = null
+let view: View = 'list' // 'list' | 'detail'
+let selected: string | null = null // row key
+let messageTo: MessageTarget | null = null
 let note = ''
 
 export  const register:Register = (on) => {
@@ -143,7 +144,7 @@ export  const register:Register = (on) => {
     const rows = mergeRows(sessions, snapshots).filter((r) => r.group !== 'Done')
     const target = rows.find((r) => r.key === selected) || null
     if (view === 'detail' && !target) view = 'list'
-    const actions = {
+    const actions: Actions = {
       open: (r) => {
         selected = r.key
         view = 'detail'
@@ -179,7 +180,7 @@ export  const register:Register = (on) => {
 
 // ---------- pane lifecycle ----------
 
-async function openPane($, focus) {
+async function openPane($:EngineInterface, focus:boolean) {
   const pane = { id: PANE, title: 'Agents', columns: PANE_COLUMNS }
   try {
     const r = await $.ui.open(focus ? { ...pane, focus: true } : pane)
@@ -192,7 +193,7 @@ async function openPane($, focus) {
 }
 
 // Runs every POLL_MS: reopen a pinned pane that something closed, then refresh the data
-async function tick($) {
+async function tick($:EngineInterface) {
   if (pinned && !paneOpen && !paneWaiting) {
     await openPane($, false)
     if (paneOpen && lastCloseKind) note = 'reopened after a ' + lastCloseKind + ' close'
@@ -200,9 +201,9 @@ async function tick($) {
   if (paneOpen) await refresh($)
 }
 
-async function wasPinned($) {
+async function wasPinned($:EngineInterface) {
   try {
-    const prev = await $.store.get(PREFIX + sessionId)
+    const prev = (await $.store.get(PREFIX + sessionId)) as Snapshot | undefined
     return Boolean(prev && prev.pinned)
   } catch (err) {
     return false
@@ -211,7 +212,7 @@ async function wasPinned($) {
 
 // ---------- reporter ----------
 
-async function publish($, force) {
+async function publish($:EngineInterface, force: boolean) {
   if (!dirty && !force) return
   dirty = false
   if (!sessionId) return
@@ -245,9 +246,9 @@ async function publish($, force) {
   })
 }
 
-async function detectWorktree($) {
+async function detectWorktree($:EngineInterface):Promise<string> {
   const m = /\.claude\/worktrees\/([^/]+)/.exec(sessionCwd)
-  if (m) return m[1]
+  if (m) return m[1]!
   try {
     const r = await $.process.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
     return r.exitCode === 0 ? r.stdout.trim() : ''
@@ -256,7 +257,7 @@ async function detectWorktree($) {
   }
 }
 
-async function readDiff($) {
+async function readDiff($:EngineInterface):Promise<FilesDiff|null> {
   try {
     const r = await $.process.run(['git', 'diff', '--shortstat', 'HEAD'])
     if (r.exitCode !== 0) return null
@@ -272,7 +273,7 @@ async function readDiff($) {
 
 // ---------- viewer data and actions ----------
 
-async function refresh($) {
+async function refresh($:EngineInterface) {
   try {
     const r = await $.process.run(['claude', 'agents', '--json', '--all'])
     if (r.exitCode === 0) {
@@ -290,12 +291,12 @@ async function refresh($) {
   } catch (err) {
     limits = []
   }
-  const found = {}
+  const found: Record<string, Snapshot> = {}
   try {
     const keys = await $.store.keys()
     for (const k of keys) {
       if (!String(k).startsWith(PREFIX)) continue
-      const snap = await $.store.get(k)
+      const snap = (await $.store.get(k)) as Snapshot | undefined
       if (snap && snap.id) found[snap.id] = snap
     }
   } catch (err) {
@@ -305,24 +306,24 @@ async function refresh($) {
   $.ui.invalidate('ui.render')
 }
 
-async function stopSession($, r) {
+async function stopSession($:EngineInterface, r: Row) {
   if (!r.id) return 'interactive session: stop it from its own terminal'
   try {
     const res = await $.process.run(['claude', 'stop', r.id])
     return res.exitCode === 0 ? 'stopped ' + r.name : 'stop failed: ' + fit(res.stderr.trim(), 40)
   } catch (err) {
-    return 'stop failed: ' + err.message
+    return 'stop failed: ' + (err as Error).message
   }
 }
 
-async function copyAttach($, r) {
+async function copyAttach($:EngineInterface, r: Row) {
   const cmd = r.id ? 'claude attach ' + r.id : r.sessionId ? 'claude --resume ' + r.sessionId : ''
   if (!cmd) return 'nothing to attach to'
   await $.ui.copy(cmd)
   return 'copied: ' + cmd
 }
 
-async function submitInput($, value) {
+async function submitInput($:EngineInterface, value: string) {
   const text = String(value || '').trim()
   if (!text) return note
   if (messageTo) {
