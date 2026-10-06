@@ -1,4 +1,4 @@
-import type { PaneCloseOrigin, SessionContextUsage, SessionRateLimit } from 'claude-code'
+import type { ElementTable, PaneCloseOrigin, SessionContextUsage, SessionRateLimit } from 'claude-code'
 
 export type FilesDiff = {
   files: number,
@@ -133,3 +133,5 @@ export type ScreenModel = {
   messageTo: MessageTarget | null,
   note: string,
 }
+
+export type PaneElements = Pick<ElementTable<'terminal'>, 'Box' | 'Text' | 'Button' | 'Input'>

@@ -6,9 +6,9 @@
 // because `claude plugin validate` rejects passing `$` into imported functions.
 // Requires Claude Code v2.1.287+. Develop with: claude --plugin-dir ./agent-dash  →  /dash
 import type { EngineInterface, Register, SessionRateLimit } from 'claude-code';
-import { mergeRows, toolDetail, addTokens, trimAgents, EDIT_TOOLS } from './lib/rows.js'
-import { screen } from './lib/views.js'
-import { fit } from './lib/format.js'
+import { mergeRows, toolDetail, addTokens, trimAgents, EDIT_TOOLS } from './lib/rows'
+import { screen } from './lib/views'
+import { fit } from './lib/format'
 import type { Actions, AgentEntry, CloseKind, FilesDiff, LastTurn, ListedSession, MessageTarget, Row, Snapshot, TaskEntry, Tokens, ToolUse, View } from './lib/types';
 
 const PANE = 'dash'
@@ -140,6 +140,7 @@ export  const register:Register = (on) => {
     paneOpen = true
     paneWaiting = false
     const el = $.ui.resolve(e)
+    if (!('Input' in el)) return next(e)
     const w = Math.max(32, Number(e.props.bodyColumns) || 60)
     const rows = mergeRows(sessions, snapshots).filter((r) => r.group !== 'Done')
     const target = rows.find((r) => r.key === selected) || null
@@ -334,7 +335,7 @@ async function submitInput($:EngineInterface, value: string) {
   }
   try {
     const r = await $.process.run(['claude', '--bg', text])
-    return r.exitCode === 0 ? 'started: ' + fit(r.stdout.trim().split('\n')[0], 40) : 'start failed: ' + fit(r.stderr.trim(), 40)
+    return r.exitCode === 0 ? 'started: ' + fit(r.stdout.trim().split('\n')[0] ?? '', 40) : 'start failed: ' + fit(r.stderr.trim(), 40)
   } catch (err) {
     return 'start failed: ' + err.message
   }

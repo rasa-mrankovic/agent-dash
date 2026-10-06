@@ -3,13 +3,13 @@
 const ANSI_ESCAPES = /\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)|[ -/]*[0-~])/g
 const CONTROL_CHARS = /[\x00-\x1f\x7f-\x9f]/g
 
-export function fit(text, width) {
+export function fit(text: string, width: number): string {
   const t = String(text || '').replace(ANSI_ESCAPES, '').replace(CONTROL_CHARS, ' ')
   if (width <= 0) return ''
   return t.length <= width ? t : t.slice(0, Math.max(0, width - 1)) + '…'
 }
 
-export function ago(ms) {
+export function ago(ms: number): string {
   if (!ms) return ''
   const s = Math.max(0, Math.floor((Date.now() - ms) / 1000))
   if (s < 60) return s + 's'
@@ -17,33 +17,33 @@ export function ago(ms) {
   return Math.floor(s / 3600) + 'h'
 }
 
-export function fmtTokens(n) {
+export function fmtTokens(n: number): string {
   if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M'
   if (n >= 1e3) return Math.round(n / 1e3) + 'k'
   return String(n)
 }
 
-export function baseName(p) {
+export function baseName(p: string): string {
   const parts = String(p || '').split('/').filter(Boolean)
   return parts[parts.length - 1] || 'session'
 }
 
 // A 0–100 percentage as filled and empty bar cells
-export function bar(percent, cells) {
+export function bar(percent: number, cells: number): { filled: string, empty: string } {
   const p = Math.max(0, Math.min(100, Number(percent) || 0))
   const filled = Math.round((p / 100) * cells)
   return { filled: '█'.repeat(filled), empty: '░'.repeat(cells - filled) }
 }
 
-const KINDS = { five_hour: '5h', seven_day: 'week', seven_day_opus: 'week opus', seven_day_sonnet: 'week sonnet' }
+const KINDS: Record<string, string> = { five_hour: '5h', seven_day: 'week', seven_day_opus: 'week opus', seven_day_sonnet: 'week sonnet' }
 
-export function kindLabel(kind) {
+export function kindLabel(kind: string): string {
   const k = String(kind || '').toLowerCase()
   return KINDS[k] || k.replace(/_/g, ' ') || 'limit'
 }
 
 // resetsAt may be epoch seconds, epoch milliseconds, or an ISO date string
-export function untilText(resetsAt) {
+export function untilText(resetsAt: string | number | null | undefined): string {
   const raw = String(resetsAt === undefined || resetsAt === null ? '' : resetsAt).trim()
   if (!raw) return ''
   let t = /^\d+(\.\d+)?$/.test(raw) ? Number(raw) : Date.parse(raw)

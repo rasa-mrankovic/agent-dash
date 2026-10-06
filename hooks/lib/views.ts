@@ -1,12 +1,14 @@
-import { ACCENT, WAITING, WARN, DANGER, glyphOf, colorOf } from './theme.js'
-import { fit, ago, bar, kindLabel, untilText } from './format.js'
-import { titleRows } from './title.js'
-import { miniInfo } from './rows.js'
+import type { ButtonProps, RenderElement, SessionRateLimit } from 'claude-code'
+import { ACCENT, WAITING, WARN, DANGER, glyphOf, colorOf } from './theme'
+import { fit, ago, bar, kindLabel, untilText } from './format'
+import { titleRows } from './title'
+import { miniInfo } from './rows'
+import type { Actions, PaneElements, Row, ScreenModel } from './types'
 
 // Drawing code. No mods API calls in this file: `el` holds the element functions
 // from $.ui.resolve(e), and `actions` holds callbacks built in register.ts.
 
-export function screen(el, model, actions) {
+export function screen(el: PaneElements, model: ScreenModel, actions: Actions): RenderElement {
   const { Box, Text } = el
   const { w, rows, view, target, limits, agentsError, note } = model
   const children = [...titleRows(Text, w), ...statusRows(el, rows, limits, w)]
@@ -23,7 +25,7 @@ export function screen(el, model, actions) {
 }
 
 // Counts on the first line, then one line per plan limit
-function statusRows(el, rows, limits, w) {
+function statusRows(el: PaneElements, rows: Row[], limits: SessionRateLimit[], w: number): RenderElement[] {
   const { Box, Text } = el
   const needInput = rows.filter((r) => r.group === 'Needs input').length
   const sessionLines = [
@@ -68,12 +70,12 @@ function statusRows(el, rows, limits, w) {
   return [lineSeparator(el, w),...limitLines, ...sessionLines]
 }
 
-function listRows(el, rows, w, actions, agentsError) {
+function listRows(el: PaneElements, rows: Row[], w: number, actions: Actions, agentsError: string): RenderElement[] {
   const { Box, Text, Button } = el
-  const out = []
+  const out: RenderElement[] = []
   if (rows.length === 0) out.push(Text({ dimColor: true, children: ['No active sessions. Type a task below to start one.'] }))
   rows.forEach((r, i) => {
-    const button = { key: 'row-' + r.key, plain: true, label: fit(r.name, Math.max(10, w - 10)), onPress: () => actions.open(r) }
+    const button: ButtonProps = { key: 'row-' + r.key, plain: true, label: fit(r.name, Math.max(10, w - 10)), onPress: () => actions.open(r) }
     if (i < 9) button.hotkey = String(i + 1)
     out.push(
       Box({
@@ -88,9 +90,9 @@ function listRows(el, rows, w, actions, agentsError) {
   return out
 }
 
-function detailRows(el, r, w, actions) {
+function detailRows(el: PaneElements, r: Row, w: number, actions: Actions): RenderElement[] {
   const { Box, Text, Button } = el
-  const out = []
+  const out: RenderElement[] = []
   const snap = r.snap
   out.push(
     Box({
@@ -140,7 +142,7 @@ function detailRows(el, r, w, actions) {
   return out
 }
 
-function newSessionRows(el, w, model, actions) {
+function newSessionRows(el: PaneElements, w: number, model: ScreenModel, actions: Actions): RenderElement[] {
   const { Text } = el;
   return [
     lineSeparator(el, w),
@@ -149,7 +151,7 @@ function newSessionRows(el, w, model, actions) {
   ]
 }
 
-function inputRow(el, model, actions) {
+function inputRow(el: PaneElements, model: ScreenModel, actions: Actions): RenderElement {
   const { Input } = el
   const to = model.messageTo
   return Input({
@@ -162,7 +164,7 @@ function inputRow(el, model, actions) {
   })
 }
 
-function lineSeparator(el, w, dim = false) {
+function lineSeparator(el: PaneElements, w: number, dim = false): RenderElement {
   const { Box, Text } = el;
 
   return Box({
