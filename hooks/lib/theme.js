@@ -1,6 +1,6 @@
 // Colors and glyphs shared by every screen of the pane.
 // ACCENT recolors the title, the separator, working rows and limit bars.
-export const ACCENT = '#574AE2'
+export const ACCENT = '#E75B91'
 export const WAITING = 'yellow'
 export const DONE = 'green'
 export const WARN = 'yellow'

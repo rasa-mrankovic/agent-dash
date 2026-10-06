@@ -37,17 +37,15 @@ function statusRows(el, rows, limits, w) {
           children: [
             Text({ color: WAITING, children: ['✻ '] }),
             Text({ children: [needInput + ' need input'] }),
-          ],
-        }),
-        Box({
-          flexDirection: "row",
-          children: [
+            Text({ dimColor: true, children: [' • ']}),
             Text({ color: ACCENT, children: ['✽ '] }),
             Text({ children: [rows.length - needInput + ' working'] }),
           ],
         }),
+
       ],
     }),
+    lineSeparator(el, w, true)
   ]
 
   const limitLines = [Text({ bold: true, children: ['Usage limits:'] })]
@@ -168,14 +166,14 @@ function inputRow(el, model, actions) {
   })
 }
 
-function lineSeparator(el, w) {
+function lineSeparator(el, w, dim = false) {
   const { Box, Text } = el;
 
   return Box({
     flexDirection: 'row',
-    marginTop: 1,
     children: [
       Text({
+        dimColor: dim,
         children: ["_".repeat(w)]
       })
     ],
