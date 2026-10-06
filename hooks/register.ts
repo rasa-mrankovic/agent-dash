@@ -83,23 +83,13 @@ export  const register:Register = (on) => {
   })
 
   // ---------- reporter hooks ----------
-  on('classic.SubagentStart', async ($, e, next) => {
-    const prev = agents[e.agent_id] || {}
-    agents[e.agent_id] = { ...prev, type: e.agent_type, state: 'working', startedAt: prev.startedAt || Date.now() }
-    dirty = true
-    return next(e)
-  })
-
-  on('classic.SubagentStop', async ($, e, next) => {
-    const prev = agents[e.agent_id] || { type: e.agent_type, startedAt: Date.now() }
-    agents[e.agent_id] = {
-      ...prev,
-      state: 'done',
-      endedAt: Date.now(),
-      result: String(e.last_assistant_message || '').replace(/\s+/g, ' ').slice(0, 160),
+  on('agent.spawn', async ($, e, next) => {
+    const r = await next(e)
+    if (r.agentId) {
+      agents[r.agentId] = { type: e.subagentType, state: 'working', startedAt: Date.now() }
+      dirty = true
     }
-    dirty = true
-    return next(e)
+    return r
   })
 
   on('classic.TaskCreated', async ($, e, next) => {
@@ -131,6 +121,8 @@ export  const register:Register = (on) => {
   on('turn.complete', async ($, e, next) => {
     tokens = addTokens(tokens, e.usage)
     lastTurn = { agentId: e.agentId || null, durationMs: e.durationMs || 0, at: Date.now() }
+    const prev = e.agentId && agents[e.agentId]
+    if (prev) agents[e.agentId] = { ...prev, state: 'done', endedAt: Date.now(), result: e.answer.replace(/\s+/g, ' ').slice(0, 160) }
     dirty = true
     return next(e)
   })
