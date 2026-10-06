@@ -124,10 +124,6 @@ function detailRows(el, r, w, actions) {
         out.push(Text({ dimColor: t.done, children: [fit('  [' + (t.done ? 'x' : ' ') + '] ' + t.subject + (t.owner ? ' · ' + t.owner : ''), w)] }))
       }
     }
-    if ((snap.lastTools || []).length > 0) out.push(Text({ bold: true, children: ['  recent tools'] }))
-    for (const t of (snap.lastTools || []).slice(0, 3)) {
-      out.push(Text({ dimColor: true, children: [fit('  ● ' + t.tool + ' ' + t.detail, w)] }))
-    }
   }
   out.push(
     Box({
