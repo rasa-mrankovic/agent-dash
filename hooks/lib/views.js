@@ -59,7 +59,7 @@ function statusRows(el, rows, limits, w) {
         children: [
           Text({ dimColor: true, children: [kindLabel(l.kind).padEnd(11)] }),
           Box({ flexDirection: 'row', children: [Text({ color: tone, children: [b.filled] }), Text({ dimColor: true, children: [b.empty] })] }),
-          Text({ children: [String(pct).padStart(3) + '%'] }),
+          Text({ children: [String(pct).padStart(3) + '% '] }),
           Text({ dimColor: true, children: [fit(untilText(l.resetsAt), Math.max(0, w - 29))] }),
         ],
       }),
