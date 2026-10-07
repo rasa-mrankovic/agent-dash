@@ -1,5 +1,5 @@
 import type { ProcessRunResult } from 'claude-code'
-import { expect, test } from 'claude-code/testing'
+import { expect, mock, test } from 'claude-code/testing'
 
 const DASH = { command: 'dash', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: true, columns: 120 } } as const
 
@@ -9,6 +9,7 @@ const exited = (exitCode: number, stdout: string): { value: ProcessRunResult } =
 
 for (const surface of ['terminal', 'desktop'] as const) {
   test(`a message keeps its recipient after the session finishes (${surface})`, async ($, on) => {
+    mock.clock(on, { now: Date.now() })
     const listed = [{ id: 'aaaa1111', cwd: '/tmp/x', kind: 'background', startedAt: Date.now(), sessionId: 'sess-x', name: 'story', state: 'working', status: 'busy' }]
     const started: string[] = []
     const sent: { to: string; text: string }[] = []

@@ -9,6 +9,7 @@ import type { EngineInterface, Register, SessionRateLimit } from 'claude-code';
 import { mergeRows, toolDetail, addTokens, trimAgents, EDIT_TOOLS } from './lib/rows'
 import { screen } from './lib/views'
 import { fit } from './lib/format'
+import { SPIN_MS } from './lib/theme'
 import type { Actions, AgentEntry, CloseKind, FilesDiff, LastTurn, ListedSession, MessageTarget, Row, Snapshot, TaskEntry, Tokens, ToolUse, View } from './lib/types';
 
 const PANE = 'dash'
@@ -60,6 +61,7 @@ export  const register:Register = (on) => {
     dirty = true
     $.clock.every(PUBLISH_MS, () => publish($, false))
     $.clock.every(POLL_MS, () => tick($))
+    $.clock.every(SPIN_MS, () => spin($))
     return next(e)
   })
 
@@ -142,6 +144,7 @@ export  const register:Register = (on) => {
     const el = $.ui.resolve(e)
     if (!('Input' in el)) return next(e)
     const w = Math.max(32, Number(e.props.bodyColumns) || 60)
+    const now = await $.clock.now()
     const rows = mergeRows(sessions, snapshots).filter((r) => r.group !== 'Done')
     const target = rows.find((r) => r.key === selected) || null
     if (view === 'detail' && !target) view = 'list'
@@ -175,7 +178,7 @@ export  const register:Register = (on) => {
         await refresh($)
       },
     }
-    return screen(el, { w, rows, view, target, limits, agentsError, messageTo, note }, actions)
+    return screen(el, { w, now, rows, view, target, limits, agentsError, messageTo, note }, actions)
   })
 }
 
@@ -200,6 +203,13 @@ async function tick($:EngineInterface) {
     if (paneOpen && lastCloseKind) note = 'reopened after a ' + lastCloseKind + ' close'
   }
   if (paneOpen) await refresh($)
+}
+
+// Runs every SPIN_MS: redraw an open session between polls so its running agents' spinners and timers move
+function spin($: EngineInterface) {
+  const snap = selected ? snapshots[selected] : undefined
+  if (!paneOpen || view !== 'detail' || !snap) return
+  if (Object.values(snap.agents || {}).some((a) => a.state === 'working')) $.ui.invalidate('ui.render')
 }
 
 async function wasPinned($:EngineInterface) {
@@ -284,7 +294,7 @@ async function refresh($:EngineInterface) {
       agentsError = 'claude agents: ' + r.stderr.trim()
     }
   } catch (err) {
-    agentsError = 'claude agents unavailable: ' + err.message
+    agentsError = 'claude agents unavailable: ' + (err as Error).message
   }
   try {
     const usage = await $.session.usage()
@@ -337,6 +347,6 @@ async function submitInput($:EngineInterface, value: string) {
     const r = await $.process.run(['claude', '--bg', text])
     return r.exitCode === 0 ? 'started: ' + fit(r.stdout.trim().split('\n')[0] ?? '', 40) : 'start failed: ' + fit(r.stderr.trim(), 40)
   } catch (err) {
-    return 'start failed: ' + err.message
+    return 'start failed: ' + (err as Error).message
   }
 }

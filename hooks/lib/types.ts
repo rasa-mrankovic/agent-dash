@@ -125,6 +125,7 @@ export type Actions = {
 
 export type ScreenModel = {
   w: number,
+  now: number,
   rows: Row[],
   view: View,
   target: Row | null,

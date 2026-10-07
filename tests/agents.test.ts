@@ -3,6 +3,8 @@ import { expect, mock, test } from 'claude-code/testing'
 
 const DASH = { command: 'dash', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: true, columns: 120 } } as const
 const POLL_MS = 3000
+const ACCENT = '#E75B91'
+const SPINNER = /^[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]$/
 
 const exited = (exitCode: number, stdout: string): { value: ProcessRunResult } => ({
   value: { exitCode, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false },
@@ -41,7 +43,8 @@ for (const surface of ['terminal', 'desktop'] as const) {
       requestId: 'dash',
       props: { title: 'Agents', isFocused: true, bodyColumns: 62, placement: 'dock', scroll: { offset: 0, bodyRows: 40 }, view: {} },
     })
-    const agentRow = async () => (await ui.find({ type: 'Text', text: 'Explore · ' }))?.text
+    const agentLabel = async () => (await ui.find({ type: 'Text', text: ' Explore · ' }))?.text
+    const agentMark = () => ui.find({ type: 'Text', text: /^[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏✓]$/ })
 
     await $.session.start({ cwd: '/tmp/x', surface, isInteractive: true })
     await $.command.run(DASH)
@@ -58,13 +61,21 @@ for (const surface of ['terminal', 'desktop'] as const) {
       fork: false,
     })
     await clock.advance(POLL_MS)
-    expect(await agentRow(), 'the detail pane lists the spawned subagent as running').toBe('  └ ✽ Explore · running')
+    expect(await agentLabel(), 'a running subagent shows how long it has run').toMatch(/^ Explore · \d+s$/)
+    const spinning = await agentMark()
+    expect(spinning?.text, 'a running subagent has a spinner').toMatch(SPINNER)
+    expect(spinning?.props.color, 'the spinner is drawn in the accent color').toBe(ACCENT)
+    await clock.advance(250)
+    expect((await agentMark())?.text, 'the spinner moves between polls').not.toBe(spinning?.text)
 
     await $.turn.complete(finished('agent-1', 'Found three callers\n  in register.ts'))
     await $.turn.complete(finished('agent-unspawned', 'a fork nobody spawned through the Agent tool'))
     await $.turn.complete(finished(undefined, 'the main loop answered'))
     await clock.advance(POLL_MS)
-    expect(await agentRow(), 'the finished subagent shows its answer on one line').toBe('  └ ∙ Explore · Found three callers in register.ts')
+    expect(await agentLabel(), 'the finished subagent shows its answer on one line').toBe(' Explore · Found three callers in register.ts')
+    const check = await agentMark()
+    expect(check?.text, 'a finished subagent has a checkmark').toBe('✓')
+    expect(check?.props.color, 'the checkmark is drawn in the accent color').toBe(ACCENT)
     expect((await ui.find({ type: 'Text', text: /^ {2}agents \d+$/ }))?.text, 'turns of loops nobody spawned add no rows').toBe('  agents 1')
   })
 }

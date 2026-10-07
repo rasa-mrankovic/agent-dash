@@ -1,5 +1,5 @@
 import type { ProcessRunResult } from 'claude-code'
-import { expect, test } from 'claude-code/testing'
+import { expect, mock, test } from 'claude-code/testing'
 
 const BG_STDOUT =
   'backgrounded · \x1b[36meb4f32d5\x1b[39m\n' +
@@ -22,6 +22,7 @@ function strings(node: unknown): string[] {
 
 for (const surface of ['terminal', 'desktop'] as const) {
   test(`the pane stays drawn after a dispatch with coloured CLI output (${surface})`, async ($, on) => {
+    mock.clock(on, { now: Date.now() })
     on('process.run', async (_$, e) => {
       if (e.argv[0] === 'claude' && e.argv[1] === '--bg') return exited(0, BG_STDOUT)
       if (e.argv.join(' ') === 'claude agents --json --all') return exited(0, '[]')

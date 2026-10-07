@@ -1,6 +1,6 @@
 import type { ButtonProps, RenderElement, SessionRateLimit } from 'claude-code'
-import { ACCENT, WAITING, WARN, DANGER, glyphOf, colorOf } from './theme'
-import { fit, ago, bar, kindLabel, untilText } from './format'
+import { ACCENT, CHECK, WAITING, WARN, DANGER, glyphOf, colorOf, spinnerFrame } from './theme'
+import { fit, ago, bar, duration, kindLabel, untilText } from './format'
 import { titleRows } from './title'
 import { miniInfo } from './rows'
 import type { Actions, PaneElements, Row, ScreenModel } from './types'
@@ -10,11 +10,11 @@ import type { Actions, PaneElements, Row, ScreenModel } from './types'
 
 export function screen(el: PaneElements, model: ScreenModel, actions: Actions): RenderElement {
   const { Box, Text } = el
-  const { w, rows, view, target, limits, agentsError, note } = model
+  const { w, now, rows, view, target, limits, agentsError, note } = model
   const children = [...titleRows(Text, w), ...statusRows(el, rows, limits, w)]
 
   if (view === 'detail' && target)
-    children.push(...detailRows(el, target, w, actions))
+    children.push(...detailRows(el, target, w, now, actions))
   else children.push(...listRows(el, rows, w, actions, agentsError))
 
   children.push(...newSessionRows(el, w, model, actions));
@@ -90,7 +90,7 @@ function listRows(el: PaneElements, rows: Row[], w: number, actions: Actions, ag
   return out
 }
 
-function detailRows(el: PaneElements, r: Row, w: number, actions: Actions): RenderElement[] {
+function detailRows(el: PaneElements, r: Row, w: number, now: number, actions: Actions): RenderElement[] {
   const { Box, Text, Button } = el
   const out: RenderElement[] = []
   const snap = r.snap
@@ -114,9 +114,18 @@ function detailRows(el: PaneElements, r: Row, w: number, actions: Actions): Rend
     if (list.length > 0) out.push(Text({ bold: true, children: ['  agents ' + list.length] }))
     list.forEach(([id, a], i) => {
       const tee = i === list.length - 1 ? '└' : '├'
-      const glyph = a.state === 'done' ? '∙' : '✽'
-      const tail = a.state === 'done' ? a.result || 'done' : 'running'
-      out.push(Text({ children: [fit('  ' + tee + ' ' + glyph + ' ' + (a.type || id) + ' · ' + tail, w)] }))
+      const mark = a.state === 'done' ? CHECK : spinnerFrame(now)
+      const tail = a.state === 'done' ? a.result || 'done' : duration(now - a.startedAt)
+      out.push(
+        Box({
+          flexDirection: 'row',
+          children: [
+            Text({ children: ['  ' + tee + ' '] }),
+            Text({ color: ACCENT, children: [mark] }),
+            Text({ children: [fit(' ' + (a.type || id) + ' · ' + tail, Math.max(0, w - 5))] }),
+          ],
+        }),
+      )
     })
     const taskList = Object.values(snap.tasks || {})
     if (taskList.length > 0) {

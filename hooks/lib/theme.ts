@@ -15,3 +15,11 @@ export function glyphOf(group: Group): string {
 export function colorOf(group: Group): string {
   return group === 'Needs input' ? WAITING : group === 'Working' ? ACCENT : DONE
 }
+
+export const CHECK = '✓'
+export const SPINNER = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'] as const
+export const SPIN_MS = 200
+
+export function spinnerFrame(now: number): string {
+  return SPINNER[Math.floor(now / SPIN_MS) % SPINNER.length] ?? SPINNER[0]
+}

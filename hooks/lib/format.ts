@@ -17,6 +17,14 @@ export function ago(ms: number): string {
   return Math.floor(s / 3600) + 'h'
 }
 
+// Elapsed time with one finer unit: 42s, 3m 07s, 1h 05m
+export function duration(ms: number): string {
+  const s = Math.max(0, Math.floor(ms / 1000))
+  if (s < 60) return s + 's'
+  if (s < 3600) return Math.floor(s / 60) + 'm ' + String(s % 60).padStart(2, '0') + 's'
+  return Math.floor(s / 3600) + 'h ' + String(Math.floor((s % 3600) / 60)).padStart(2, '0') + 'm'
+}
+
 export function fmtTokens(n: number): string {
   if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M'
   if (n >= 1e3) return Math.round(n / 1e3) + 'k'
